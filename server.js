@@ -40,7 +40,7 @@ io.on('connection', (socket) => {
 });
 
 // Server kuanza kusikiliza
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server ya SecureChat inaendesha kwenye: http://localhost:${PORT}`);
 }); 
