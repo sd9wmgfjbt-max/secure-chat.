@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>StanschatApp v20.5</title>
+    <style>
+        :root { --bg: #0b141a; --panel: #111b21; --input: #2a3942; --accent: #00a884; --text: #e9edef; --dim: #8696a0; --border: #222d34; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #000; color: var(--text); height: 100vh; display: flex; justify-content: center; align-items: center; }
+        .app { width: 100%; max-width: 450px; height: 100vh; background: var(--bg); position: relative; display: flex; flex-direction: column; overflow: hidden; }
+        
+        #loginScreen { position: absolute; z-index: 100; width: 100%; height: 100%; background: linear-gradient(135deg, #00a884, #004d40); display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .card { background: #fff; color: #111; width: 100%; max-width: 350px; padding: 25px; border-radius: 18px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .card h1 { color: var(--accent); font-size: 22px; }
+        .meta { font-size: 10px; color: #667; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 12px; line-height: 1.4; }
+        .meta b { color: var(--accent); }
+        .card p { font-size: 12px; color: #555; margin-bottom: 15px; }
+        input[type="tel"], input[type="number"] { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; margin-bottom: 10px; outline: none; }
+        .btn { width: 100%; padding: 10px; background: var(--accent); color: #fff; border: none; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; }
+        .hide { display: none !important; }
+
+        .header { background: var(--panel); padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); z-index: 10; }
+        .header h3 { font-size: 18px; font-weight: normal; }
+        .screen { flex: 1; overflow-y: auto; display: none; }
+        .screen.active { display: block; }
+
+        .status-list, .call-list, .chat-list, .settings-list { padding: 15px 0; }
+        .status-item, .call-item, .chat-item, .setting-item { display: flex; align-items: center; padding: 12px 15px; border-bottom: 1px solid var(--border); cursor: pointer; }
+        .status-item:hover, .call-item:hover, .chat-item:hover, .setting-item:hover { background: var(--input); }
+        .avatar { width: 45px; height: 45px; border-radius: 50%; background: var(--input); margin-right: 15px; display: flex; justify-content: center; align-items: center; font-size: 20px; }
+        .info { flex: 1; }
+        .info h4 { font-size: 15px; font-weight: 500; display: flex; justify-content: space-between; }
+        .info p { font-size: 12px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+        .badge { background: var(--accent); color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 10px; }
+        .add-status { position: fixed; bottom: 80px; right: 20px; width: 50px; height: 50px; background: var(--accent); border-radius: 50%; border: none; color: #fff; font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 20; }
+
+        #chatRoom { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 50; display: none; flex-direction: column; }
+        .room-header { background: var(--panel); padding: 12px 15px; display: flex; align-items: center; border-bottom: 1px solid var(--border); }
+        .room-header span { margin-left: 15px; flex: 1; }
+        .chat-box { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
+        .bubble { max-width: 80%; padding: 8px 12px; border-radius: 8px; font-size: 14px; word-wrap: break-word; }
+        .bubble.me { background: #005c4b; align-self: flex-end; border-bottom-right-radius: 0; }
+        .bubble.them { background: var(--panel); align-self: flex-start; border-bottom-left-radius: 0; }
+        .bubble a { color: #53bdeb; }
+        .time-stamp { font-size: 10px; color: rgba(255,255,255,0.5); text-align: right; margin-top: 3px; }
+        .room-footer { background: var(--panel); padding: 8px; border-top: 1px solid var(--border); }
+        .tools { display: flex; gap: 15px; padding: 5px 10px; }
+        .tool-btn { background: none; border: none; color: var(--dim); font-size: 18px; cursor: pointer; }
+        .typing-row { display: flex; gap: 8px; }
+        .typing-row input { flex: 1; background: var(--input); border: none; border-radius: 8px; padding: 10px; color: #fff; outline: none; }
+        .typing-row button { background: var(--accent); border: none; color: #fff; width: 40px; height: 40px; border-radius: 50%; font-size: 18px; cursor: pointer; }
+        .file-input { display: none; }
+
+        .bottom-nav { background: var(--panel); display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid var(--border); z-index: 30; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--dim); cursor: pointer; font-size: 11px; gap: 4px; transition: 0.2s; }
+        .nav-item.active { color: var(--accent); }
+        .nav-icon { font-size: 22px; }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <div id="loginScreen">
+        <div class="card">
+            <h1>StanschatApp</h1>
+            <div class="meta"><b>Vision v20.5 Latest Vision</b><br>Vote (3 votes)<br>Developer: Stanslaus Chaki<br>Works under: Android and IOS<br>Program license: Free<br>Version: (Lock for Whatsapp) 20.5</div>
+            <p>Jiunge kwa namba yako. Tutakutumia Verification Code kwa SMS.</p>
+            <div id="s1"><input type="tel" id="phone" placeholder="+255..." value="+255"><button class="btn" onclick="login()">Tuma Code</button></div>
+            <div id="s2" class="hide"><input type="number" id="otp" placeholder="Code 6 tarakimu"><button class="btn" onclick="enterApp()">Ingia</button></div>
+        </div>
+    </div>
+
+    <div class="header"><h3 id="headerTitle">StanschatApp</h3></div>
+
+    <div id="statusScreen" class="screen active">
+        <div class="status-list">
+            <div class="status-item" onclick="alert('Kuweka Status...')"><div class="avatar">➕</div><div class="info"><h4>Status Yangu</h4><p>Bonyeza kuongeza status</p></div></div>
+            <div class="status-item"><div class="avatar">👩</div><div class="info"><h4>Bi Asha</h4><p>Leo, 10:30 AM</p></div></div>
+        </div>
+        <button class="add-status" onclick="alert('Kamera...')">📷</button>
+    </div>
+
+    <div id="callsScreen" class="screen">
+        <div class="call-list">
+            <div class="call-item"><div class="avatar">👩</div><div class="info"><h4>Bi Asha</h4><p style="color:#00a884">Video Call Iliyopita</p></div><div style="color:var(--accent); font-size:20px;">📹</div></div>
+            <div class="call-item"><div class="avatar">👥</div><div class="info"><h4>Group la Biashara</h4><p style="color:var(--dim)">Bonyeza kuanzisha call</p></div><div style="color:var(--accent); font-size:20px;">📹</div></div>
+        </div>
+    </div>
+
+    <div id="chatsScreen" class="screen">
+        <div class="chat-list">
+            <div class="chat-item" onclick="openChat('Bi Asha')"><div class="avatar">👩</div><div class="info"><h4>Bi Asha <span class="badge">2</span></h4><p>Njoo ofisini...</p></div></div>
+            <div class="chat-item" onclick="openChat('Kaka John')"><div class="avatar">👨</div><div class="info"><h4>Kaka John</h4><p>Pesa zimefika.</p></div></div>
+            <div class="chat-item" onclick="alert('Group...')"><div class="avatar">👥</div><div class="info"><h4>Group la Biashara</h4><p>Mimi: Karibuni.</p></div></div>
+        </div>
+    </div>
+
+    <div id="settingsScreen" class="screen">
+        <div style="padding: 15px; display: flex; align-items: center; border-bottom: 1px solid var(--border);"><div style="width: 60px; height: 60px; border-radius: 50%; background: var(--input); margin-right: 15px; display: flex; align-items: center; justify-content: center; font-size: 24px;">😎</div><div><h4 style="font-size: 18px;">Stanslaus</h4><p style="color: var(--dim); font-size: 13px;">Busy...</p></div></div>
+        <div class="settings-list">
+            <div class="setting-item"><div class="avatar" style="width:35px;height:35px;font-size:16px;">⭐</div><div class="info"><h4>Starred Messages</h4></div></div>
+            <div class="setting-item"><div class="avatar" style="width:35px;height:35px;font-size:16px;">💻</div><div class="info"><h4>Linked Devices</h4></div></div>
+            <div class="setting-item"><div class="avatar" style="width:35px;height:35px;font-size:16px;">🔑</div><div class="info"><h4>Account</h4><p>Privacy, Security</p></div></div>
+            <div class="setting-item"><div class="avatar" style="width:35px;height:35px;font-size:16px;">🔔</div><div class="info"><h4>Notifications</h4></div></div>
+            <div class="setting-item"><div class="avatar" style="width:35px;height:35px;font-size:16px;">💾</div><div class="info"><h4>Storage and Data</h4></div></div>
+            <div class="setting-item"><div class="avatar" style="width:35px;height:35px;font-size:16px;">🤝</div><div class="info"><h4>Invite a Friend</h4></div></div>
+        </div>
+    </div>
+
+    <div id="chatRoom">
+        <div class="room-header"><span style="cursor:pointer; font-size: 20px; margin:0;" onclick="closeChat()">←</span><span><h4 id="roomName" style="margin:0">Jina</h4><p style="font-size:11px; color:var(--dim); margin:0;">Online</p></span><span style="font-size: 20px;">📹 📞</span></div>
+        <div class="chat-box" id="chatBox"></div>
+        <div class="room-footer">
+            <div class="tools">
+                <button class="tool-btn" onclick="getFile('image/*')">📷</button>
+                <button class="tool-btn" onclick="getFile('video/*')">🎬</button>
+                <button class="tool-btn" onclick="getFile('*/*')">📄</button>
+                <button class="tool-btn" onclick="sendLoc()">📍</button>
+                <button class="tool-btn" onclick="alert('Live...')">🔴</button>
+            </div>
+            <div class="typing-row">
+                <input type="file" id="fInput" class="file-input" onchange="sendFile(event)">
+                <input type="text" id="msgIn" placeholder="Andika ujumbe..." onkeypress="if(event.key==='Enter')send()">
+                <button onclick="send()">➤</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('status', this)"><div class="nav-icon">📶</div><span>Status</span></div>
+        <div class="nav-item" onclick="switchTab('calls', this)"><div class="nav-icon">📞</div><span>Calls</span></div>
+        <div class="nav-item" onclick="switchTab('chats', this)"><div class="nav-icon">💬</div><span>Chats</span></div>
+        <div class="nav-item" onclick="switchTab('settings', this)"><div class="nav-icon">⚙️</div><span>Settings</span></div>
+    </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    let target = "+255711223344"; 
+
+    function login() { document.getElementById('s1').classList.add('hide'); document.getElementById('s2').classList.remove('hide'); }
+    function enterApp() { document.getElementById('loginScreen').style.display = 'none'; }
+
+    function switchTab(tab, el) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(tab + 'Screen').classList.add('active');
+        el.classList.add('active');
+        const titles = { status: 'Status', calls: 'Calls', chats: 'Chats', settings: 'Settings' };
+        document.getElementById('headerTitle').innerText = titles[tab];
+    }
+
+    function openChat(name) {
+        document.getElementById('chatRoom').style.display = 'flex';
+        document.getElementById('roomName').innerText = name;
+        socket.emit('join_private', { me: 'Stanslaus', target: target });
+    }
+    function closeChat() { document.getElementById('chatRoom').style.display = 'none'; }
+
+    function send() {
+        const msg = document.getElementById('msgIn').value;
+        if(!msg.trim()) return;
+        socket.emit('send_msg', { me: 'Stanslaus', target: target, type: 'text', content: msg });
+        document.getElementById('msgIn').value = '';
+    }
+
+    function getFile(type) { document.getElementById('fInput').accept = type; document.getElementById('fInput').click(); }
+    function sendFile(e) {
+        const file = e.target.files[0];
+        if(!file) return;
+        const url = URL.createObjectURL(file);
+        socket.emit('send_msg', { me: 'Stanslaus', target: target, type: 'file', content: url, fileName: file.name });
+        e.target.value = '';
+    }
+
+    function sendLoc() {
+        if(!navigator.geolocation) return alert('GPS hairudi.');
+        navigator.geolocation.getCurrentPosition(p => {
+            const url = `https://maps.google.com/?q=${p.coords.latitude},${p.coords.longitude}`;
+            socket.emit('send_msg', { me: 'Stanslaus', target: target, type: 'text', content: `📍 Mahali: <a href="${url}">Fungua Ramani</a>` });
+        });
+    }
+
+    socket.on('get_msg', (data) => {
+        const box = document.getElementById('chatBox');
+        const div = document.createElement('div');
+        const isMe = data.me === 'Stanslaus' ? 'me' : 'them';
+        const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        let html = data.content;
+        if(data.type === 'file') {
+            if(data.content.includes('video')) html = `<video src="${data.content}" controls style="max-width:100%;border-radius:5px;"></video>`;
+            else if(data.content.includes('image')) html = `<img src="${data.content}" style="max-width:100%;border-radius:5px;">`;
+            else html = `📄 <a href="${data.content}" download>${data.fileName}</a>`;
+        }
+        div.innerHTML = `<div class="bubble ${isMe}">${html}<div class="time-stamp">${time} ✓✓</div></div>`;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+    });
+</script>
+</body>
+</html>
